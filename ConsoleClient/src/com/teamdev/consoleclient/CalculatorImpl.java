@@ -1,6 +1,10 @@
 package com.teamdev.consoleclient;
 
 import java.math.BigDecimal;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.text.NumberFormat;
+import java.text.ParsePosition;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashMap;
@@ -20,24 +24,41 @@ public class CalculatorImpl {
         binaryOperator.put("/", new DivideOperator(2));
     }
 
+    private States evaluateState(States[] listState, CalculatorReader expressionReader) {
+        States state;
+        Boolean status = false;
+        for (int i = 0; i < listState.length; i++) {
+            state = listState[i];
+            if (States.FINISH == state) {
+                return States.FINISH;
+            } else if (States.RIGHT_BRACKET == state) {
+                if (evalBracketClose(expressionReader)) {
+                    return States.RIGHT_BRACKET;
+                }
+            } else if (States.NUMBER == state) {
+                if (addOperand(expressionReader)) {
+                    return States.NUMBER;
+                }
+            } else if (States.LEFT_BRACKET == state) {
+                if (addBracketOpen(expressionReader)) {
+                    return States.LEFT_BRACKET;
+                }
+            } else if (States.BINARY_OPERATOR == state) {
+                if (addOperator(expressionReader)) {
+                    return States.BINARY_OPERATOR;
+                }
+            }
+        }
+        return null;
+    }
+
     public BigDecimal evaluate(String expression) {
         CalculatorReader expressionReader = new CalculatorReader(expression);
-        String currentChar;
+        TransitionMatrix trMatrix = new TransitionMatrix();
+        States state = States.START;
         while (!expressionReader.isEnd()) {
-            String currentExpression = expressionReader.getCurrentExpression();
-            //int position = expressionReader.getPosition();
-            if (currentExpression.length() > 1) {
-                currentChar = currentExpression.substring(0, 1);
-            } else {
-                currentChar = currentExpression;
-            }
-            //char element = expressionReader.getChar();
-            expressionReader.incPosition();
-            System.out.println("currentExpression= " + currentExpression);
-            System.out.println("element= " + currentChar);
-            if (!addOperand(currentChar) && !evalBracketClose(currentChar) && !addBracketOpen(currentChar)) {
-                addOperator(currentChar);
-            }
+            States[] listState = trMatrix.getTransition(state);
+            state = evaluateState(listState, expressionReader);
         }
 
         //BigDecimal result = new BigDecimal("2");
@@ -47,25 +68,56 @@ public class CalculatorImpl {
         return getResult();
     }
 
-    private Boolean addOperand(String el) {
-        try {
-            BigDecimal operand = new BigDecimal(el);
+    private BigDecimal getOperand(CalculatorReader expressionReader) {
+        DecimalFormatSymbols decimalFormatSymbols = new DecimalFormatSymbols();
+        decimalFormatSymbols.setDecimalSeparator('.');
+        NumberFormat NUMBER_FORMAT = new DecimalFormat("0,0", decimalFormatSymbols);
+        ParsePosition position = new ParsePosition(0);
+        Number number = NUMBER_FORMAT.parse(expressionReader.getCurrentExpression(), position);
+
+        if (number != null) {
+            BigDecimal result = new BigDecimal(number.doubleValue());
+            expressionReader.incPosition(number.toString().length());
+            System.out.println("--getOperand = " + result);
+            return result;
+        }
+        return null;
+    }
+
+    private Boolean addOperand(CalculatorReader expressionReader) {
+        BigDecimal operand = getOperand(expressionReader);
+        if (null != operand) {
+            System.out.println("--addOperand = " + operand);
             operandStack.push(operand);
             return true;
-        } catch (NumberFormatException e) {
+        } else {
             return false;
         }
     }
 
-    private Boolean evalBracketClose(String el) {
+    private String getSymbol(CalculatorReader expressionReader) {
+        String currentExpression = expressionReader.getCurrentExpression();
+        String currentChar;
+        if (currentExpression.length() > 1) {
+            currentChar = currentExpression.substring(0, 1);
+        } else {
+            currentChar = currentExpression;
+        }
+        return currentChar;
+    }
+
+    private Boolean evalBracketClose(CalculatorReader expressionReader) {
+        String el = getSymbol(expressionReader);
         if (el.equals(")")) {
+            System.out.println("--evalBracketClose = " + el);
+            expressionReader.incPosition();
             //TODO: Exception if empty list
             int lastOperatorSize = bracketStack.pop();
             int operatorSize = operatorStack.size();
             //TODO: Exception if operatorSize - lastOperatorSize < 0
-            if(operatorSize == lastOperatorSize){
+            if (operatorSize == lastOperatorSize) {
                 return true;
-            }else{
+            } else {
                 evaluateOperatorByCount(operatorSize - lastOperatorSize);
                 return true;
             }
@@ -73,31 +125,40 @@ public class CalculatorImpl {
         return false;
     }
 
-    private Boolean addBracketOpen(String el) {
+    private Boolean addBracketOpen(CalculatorReader expressionReader) {
+        String el = getSymbol(expressionReader);
         if (el.equals("(")) {
+            System.out.println("--addBracketOpen = " + el);
+            expressionReader.incPosition();
             bracketStack.push(operatorStack.size());
             return true;
         }
         return false;
     }
 
-    private Boolean addOperator(String el) {
-        System.out.println("--binaryOperator = " + el);
-        int bracketStackCount;
-        if(0==bracketStack.size()){
-            bracketStackCount = 0;
-        }else{
-            bracketStackCount = bracketStack.peek();
+    private Boolean addOperator(CalculatorReader expressionReader) {
+        String el = getSymbol(expressionReader);
+        if (el.equals("+") || el.equals("-") || el.equals("*") || el.equals("/")) {
+            //TODO: if el != Operator
+            expressionReader.incPosition();
+            System.out.println("--binaryOperator = " + el);
+            int bracketStackCount;
+            if (0 == bracketStack.size()) {
+                bracketStackCount = 0;
+            } else {
+                bracketStackCount = bracketStack.peek();
+            }
+            BinaryOperator lastBinaryOperator = (BinaryOperator) binaryOperator.get(el);
+            while (!operatorStack.isEmpty() && ((0 == bracketStackCount) || (1 < (operatorStack.size() - bracketStackCount)))
+                    && (operatorStack.peek().compareTo(lastBinaryOperator) < 1)) {
+                System.out.println("==operator = " + operatorStack.peek().getName());
+                evaluateOperator();
+            }
+            //TODO: Exception
+            operatorStack.push(binaryOperator.get(el));
+            return true;
         }
-        BinaryOperator lastBinaryOperator = (BinaryOperator) binaryOperator.get(el);
-        while (!operatorStack.isEmpty() && ((0 == bracketStackCount) || (1 < (operatorStack.size() - bracketStackCount)))
-                && (operatorStack.peek().compareTo(lastBinaryOperator) < 1)) {
-            System.out.println("==operator = " + operatorStack.peek().getName());
-            evaluateOperator();
-        }
-        //TODO: Exception
-        operatorStack.push(binaryOperator.get(el));
-        return true;
+        return false;
     }
 
     private void evaluateOperator() {
@@ -144,16 +205,21 @@ public class CalculatorImpl {
             System.out.println(operator.getName() + "; ");
         }
     }
+
     public static void main(String[] args) {
-        //BigDecimal result = new CalculatorImpl().evaluate("2+3*4+2*2/8-2");
+        //17.025
+        //BigDecimal result = new CalculatorImpl().evaluate("2+3*4+2*20.1/8-2");
         //BigDecimal result = new CalculatorImpl().evaluate("4-8");
         //BigDecimal result = new CalculatorImpl().evaluate("2+2*2");
         //BigDecimal result = new CalculatorImpl().evaluate("222");
         //BigDecimal result = new CalculatorImpl().evaluate("(((2-1)-2)*9)+1");
         //BigDecimal result = new CalculatorImpl().evaluate("1+((9))");
         //BigDecimal result = new CalculatorImpl().evaluate("1+(1-3)*1");
-        BigDecimal result = new CalculatorImpl().evaluate("(1)+(1+((8-2)-9)*9)");
-        //BigDecimal result = new CalculatorImpl().evaluate("1-(1-3)*2");
+        //-178
+        BigDecimal result = new CalculatorImpl().evaluate("(10)+(10+((8-21.1)-9)*9)");
+        //BigDecimal result = new CalculatorImpl().evaluate("1+(1)");
+        /*CalculatorReader expressionReader = new CalculatorReader("-50.5hkjhkj");
+        BigDecimal result = new CalculatorImpl().getOperand(expressionReader);*/
         System.out.println("====result = " + result);
     }
 }
