@@ -10,7 +10,7 @@ public class MinusOperator extends AbstractBinaryOperator {
     public String getName(){
         return "-";
     }
-    public BigDecimal evaluate(BigDecimal first, BigDecimal second) {
+    public BigDecimal evaluate(BigDecimal first, BigDecimal second) throws BinaryOperatorException{
         return second.subtract(first);
     }
 }

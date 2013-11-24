@@ -24,7 +24,7 @@ public class Calculator {
         binaryOperator.put("/", new DivideOperator(2));
     }
 
-    private States evaluateState(States[] listState, CalculatorReader expressionReader) {
+    private States evaluateState(States[] listState, CalculatorReader expressionReader) throws BinaryOperatorException, CalculatorException{
         States state;
         Boolean status = false;
         for (int i = 0; i < listState.length; i++) {
@@ -49,10 +49,12 @@ public class Calculator {
                 }
             }
         }
-        return null;
+
+        throw new CalculatorException("unknown operator or invalid transition", expressionReader.getPosition());
     }
 
-    public BigDecimal evaluate(String expression) {
+    public BigDecimal evaluate(String expression) throws BinaryOperatorException, CalculatorException {
+        expression = expression.replaceAll("\\s+","");
         CalculatorReader expressionReader = new CalculatorReader(expression);
         TransitionMatrix trMatrix = new TransitionMatrix();
         States state = States.START;
@@ -60,8 +62,6 @@ public class Calculator {
             States[] listState = trMatrix.getTransition(state);
             state = evaluateState(listState, expressionReader);
         }
-
-        //BigDecimal result = new BigDecimal("2");
 
         //printOperand();
         //printOperator();
@@ -106,15 +106,16 @@ public class Calculator {
         return currentChar;
     }
 
-    private Boolean evalBracketClose(CalculatorReader expressionReader) {
+    private Boolean evalBracketClose(CalculatorReader expressionReader) throws BinaryOperatorException, CalculatorException{
         String el = getSymbol(expressionReader);
         if (el.equals(")")) {
             System.out.println("--evalBracketClose = " + el);
+            if(0 == bracketStack.size()){
+                throw new CalculatorException("Open bracket is missing", expressionReader.getPosition());
+            }
             expressionReader.incPosition();
-            //TODO: Exception if empty list
             int lastOperatorSize = bracketStack.pop();
             int operatorSize = operatorStack.size();
-            //TODO: Exception if operatorSize - lastOperatorSize < 0
             if (operatorSize == lastOperatorSize) {
                 return true;
             } else {
@@ -136,10 +137,10 @@ public class Calculator {
         return false;
     }
 
-    private Boolean addOperator(CalculatorReader expressionReader) {
+    private Boolean addOperator(CalculatorReader expressionReader) throws BinaryOperatorException{
         String el = getSymbol(expressionReader);
-        if (el.equals("+") || el.equals("-") || el.equals("*") || el.equals("/")) {
-            //TODO: if el != Operator
+        BinaryOperator lastBinaryOperator = binaryOperator.get(el);
+        if (null != lastBinaryOperator) {
             expressionReader.incPosition();
             System.out.println("--binaryOperator = " + el);
             int bracketStackCount;
@@ -148,28 +149,28 @@ public class Calculator {
             } else {
                 bracketStackCount = bracketStack.peek();
             }
-            BinaryOperator lastBinaryOperator = (BinaryOperator) binaryOperator.get(el);
             while (!operatorStack.isEmpty() && ((0 == bracketStackCount) || (1 < (operatorStack.size() - bracketStackCount)))
                     && (operatorStack.peek().compareTo(lastBinaryOperator) < 1)) {
                 System.out.println("==operator = " + operatorStack.peek().getName());
                 evaluateOperator();
             }
-            //TODO: Exception
-            operatorStack.push(binaryOperator.get(el));
+            operatorStack.push(lastBinaryOperator);
             return true;
         }
         return false;
     }
 
-    private void evaluateOperator() {
-        //TODO: exception if operatorStack == empty or (count of operandStack < 2)
+    private void evaluateOperator() throws BinaryOperatorException{
         BinaryOperator operator = operatorStack.pop();
+        if(2 > operandStack.size()){
+            throw new BinaryOperatorException("binary operator wasn't calculated");
+        }
         BigDecimal operandFirst = operandStack.pop();
         BigDecimal operandSecond = operandStack.pop();
         operandStack.push(operator.evaluate(operandFirst, operandSecond));
     }
 
-    private void evaluateOperatorByCount(int n) {
+    private void evaluateOperatorByCount(int n) throws BinaryOperatorException{
         int count = 0;
         while (count < n) {
             evaluateOperator();
@@ -177,18 +178,14 @@ public class Calculator {
         }
     }
 
-    private BigDecimal getResult() {
-        //TODO: exception if bracketStack not Empty
+    private BigDecimal getResult() throws BinaryOperatorException{
         while (!operatorStack.isEmpty()) {
             evaluateOperator();
         }
-        //TODO:
-        //if operandStack = 1 then Result
-        //else exception
+        if(!bracketStack.isEmpty()){
+            throw new BinaryOperatorException("missing closed bracket");
+        }
         BigDecimal res = operandStack.pop();
-        //BigDecimal resRound = res.setScale(2, BigDecimal.ROUND_HALF_UP);
-        //BigDecimal.valueOf(12)
-
         return res;
     }
 

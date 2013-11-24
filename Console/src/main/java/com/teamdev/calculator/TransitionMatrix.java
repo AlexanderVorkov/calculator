@@ -10,7 +10,7 @@ public class TransitionMatrix {
         matrix.put(States.BINARY_OPERATOR, new States[]{States.NUMBER,States.LEFT_BRACKET});
         matrix.put(States.LEFT_BRACKET, new States[]{States.NUMBER,States.LEFT_BRACKET});
         matrix.put(States.RIGHT_BRACKET, new States[]{States.BINARY_OPERATOR, States.RIGHT_BRACKET, States.FINISH});
-        matrix.put(States.FINISH, new States[]{States.FINISH});
+        matrix.put(States.FINISH, new States[]{});
     }
     public States[] getTransition(States state){
         return matrix.get(state);

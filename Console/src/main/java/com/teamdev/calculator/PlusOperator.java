@@ -12,7 +12,7 @@ public class PlusOperator extends AbstractBinaryOperator {
         return "+";
     }
 
-    public BigDecimal evaluate(BigDecimal first, BigDecimal second) {
+    public BigDecimal evaluate(BigDecimal first, BigDecimal second) throws BinaryOperatorException{
         return first.add(second);
     }
 }

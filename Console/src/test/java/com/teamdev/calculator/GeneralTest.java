@@ -8,38 +8,82 @@ import static org.junit.Assert.assertEquals;
 public class GeneralTest {
     Calculator calc = new Calculator();
     @Test
-    public void operand() {
+    public void operand() throws BinaryOperatorException, CalculatorException{
         assertEquals("single number wasn't passed",
                 BigDecimal.valueOf(5), calc.evaluate("5"));
     }
     @Test
-    public void plusOperator() {
+    public void plusOperator() throws BinaryOperatorException, CalculatorException{
         assertEquals("binary operator \"+\" wasn't calculated",
                 BigDecimal.valueOf(3), calc.evaluate("1+2"));
     }
     @Test
-    public void minusOperator() {
+    public void minusOperator() throws BinaryOperatorException, CalculatorException{
         assertEquals("binary operator \"-\" wasn't calculated",
                 BigDecimal.valueOf(-1), calc.evaluate("1-2"));
     }
     @Test
-    public void divideOperator() {
+    public void divideOperator() throws BinaryOperatorException, CalculatorException{
         assertEquals("binary operator \"/\" wasn't calculated",
                 BigDecimal.valueOf(3), calc.evaluate("6/2"));
     }
     @Test
-    public void multiplOperator() {
+    public void multiplOperator() throws BinaryOperatorException, CalculatorException{
         assertEquals("binary operator \"*\" wasn't calculated",
                 BigDecimal.valueOf(12), calc.evaluate("6*2"));
     }
     @Test
-    public void exp1() {
+    public void exp1() throws BinaryOperatorException, CalculatorException{
         assertEquals("binary operators priority don't consider",
                 BigDecimal.valueOf(6), calc.evaluate("2+2*2"));
     }
     @Test
-    public void exp2() {
-        assertEquals("brackets weren't calculated",
+    public void exp2() throws BinaryOperatorException, CalculatorException{
+        assertEquals("binary operators priority don't consider",
                 BigDecimal.valueOf(-180), calc.evaluate("(10)-12/6+(10+((8-21)-9)*9)"));
+    }
+    @Test
+    public void whitespaces() throws BinaryOperatorException, CalculatorException{
+        assertEquals("whitespaces weren't calculated",
+                BigDecimal.valueOf(3), calc.evaluate(" 1 + 2"));
+    }
+
+    //Exceptions tests
+
+    @Test(expected = BinaryOperatorException.class)
+    public void divideByZero() throws BinaryOperatorException, CalculatorException {
+        calc.evaluate("1/0");
+    }
+    @Test(expected = BinaryOperatorException.class)
+    public void divideByZeroExp1() throws BinaryOperatorException, CalculatorException {
+        calc.evaluate("10/(2-2)");
+    }
+    @Test(expected = BinaryOperatorException.class)
+    public void missingClosedBracket() throws BinaryOperatorException, CalculatorException {
+        calc.evaluate("((1+2)-1");
+    }
+    @Test(expected = BinaryOperatorException.class)
+    public void missingArgumentsInBinaryOperator() throws BinaryOperatorException, CalculatorException {
+        calc.evaluate("1+1*");
+    }
+    @Test(expected = CalculatorException.class)
+    public void missingOpenBracket() throws BinaryOperatorException, CalculatorException {
+        calc.evaluate("(1+9)-1)");
+    }
+    @Test(expected = CalculatorException.class)
+    public void unknownOperator() throws BinaryOperatorException, CalculatorException {
+        calc.evaluate("2&2");
+    }
+    @Test(expected = CalculatorException.class)
+    public void invalidTransition1() throws BinaryOperatorException, CalculatorException {
+        calc.evaluate("*2");
+    }
+    @Test(expected = CalculatorException.class)
+    public void invalidTransition2() throws BinaryOperatorException, CalculatorException {
+        calc.evaluate("1*2+*2");
+    }
+    @Test(expected = CalculatorException.class)
+    public void invalidTransition3() throws BinaryOperatorException, CalculatorException {
+        calc.evaluate("1*2(2)");
     }
 }
