@@ -8,8 +8,15 @@ public class CalculatorReader {
         this.expression = expression;
     }
 
-    public char getChar(){
-        return expression.charAt(position);
+    public String getSymbol() {
+        String currentChar;
+        String expr = getCurrentExpression();
+        if (expr.length() > 1) {
+            currentChar = expr.substring(0, 1);
+        } else {
+            currentChar = expr;
+        }
+        return currentChar;
     }
 
     public int getPosition(){

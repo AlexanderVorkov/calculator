@@ -62,9 +62,6 @@ public class Calculator {
             States[] listState = trMatrix.getTransition(state);
             state = evaluateState(listState, expressionReader);
         }
-
-        //printOperand();
-        //printOperator();
         return getResult();
     }
 
@@ -78,7 +75,7 @@ public class Calculator {
         if (number != null) {
             BigDecimal result = new BigDecimal(number.doubleValue());
             expressionReader.incPosition(position.getIndex());
-            System.out.println("--getOperand = " + result);
+            //System.out.println("--getOperand = " + result);
             return result;
         }
         return null;
@@ -87,7 +84,7 @@ public class Calculator {
     private Boolean addOperand(CalculatorReader expressionReader) {
         BigDecimal operand = getOperand(expressionReader);
         if (null != operand) {
-            System.out.println("--addOperand = " + operand);
+            //System.out.println("--addOperand = " + operand);
             operandStack.push(operand);
             return true;
         } else {
@@ -95,21 +92,10 @@ public class Calculator {
         }
     }
 
-    private String getSymbol(CalculatorReader expressionReader) {
-        String currentExpression = expressionReader.getCurrentExpression();
-        String currentChar;
-        if (currentExpression.length() > 1) {
-            currentChar = currentExpression.substring(0, 1);
-        } else {
-            currentChar = currentExpression;
-        }
-        return currentChar;
-    }
-
     private Boolean evalBracketClose(CalculatorReader expressionReader) throws BinaryOperatorException, CalculatorException{
-        String el = getSymbol(expressionReader);
+        String el = expressionReader.getSymbol();
         if (el.equals(")")) {
-            System.out.println("--evalBracketClose = " + el);
+            //System.out.println("--evalBracketClose = " + el);
             if(0 == bracketStack.size()){
                 throw new CalculatorException("Open bracket is missing", expressionReader.getPosition());
             }
@@ -127,9 +113,9 @@ public class Calculator {
     }
 
     private Boolean addBracketOpen(CalculatorReader expressionReader) {
-        String el = getSymbol(expressionReader);
+        String el = expressionReader.getSymbol();
         if (el.equals("(")) {
-            System.out.println("--addBracketOpen = " + el);
+            //System.out.println("--addBracketOpen = " + el);
             expressionReader.incPosition();
             bracketStack.push(operatorStack.size());
             return true;
@@ -138,11 +124,11 @@ public class Calculator {
     }
 
     private Boolean addOperator(CalculatorReader expressionReader) throws BinaryOperatorException{
-        String el = getSymbol(expressionReader);
+        String el = expressionReader.getSymbol();
         BinaryOperator lastBinaryOperator = binaryOperator.get(el);
         if (null != lastBinaryOperator) {
             expressionReader.incPosition();
-            System.out.println("--binaryOperator = " + el);
+            //System.out.println("--binaryOperator = " + el);
             int bracketStackCount;
             if (0 == bracketStack.size()) {
                 bracketStackCount = 0;
@@ -151,7 +137,7 @@ public class Calculator {
             }
             while (!operatorStack.isEmpty() && ((0 == bracketStackCount) || (1 < (operatorStack.size() - bracketStackCount)))
                     && (operatorStack.peek().compareTo(lastBinaryOperator) < 1)) {
-                System.out.println("==operator = " + operatorStack.peek().getName());
+                //System.out.println("==operator = " + operatorStack.peek().getName());
                 evaluateOperator();
             }
             operatorStack.push(lastBinaryOperator);
@@ -187,23 +173,5 @@ public class Calculator {
         }
         BigDecimal res = operandStack.pop();
         return res;
-    }
-
-    //test
-    private void printOperand() {
-        for (Object de : operandStack) {
-            System.out.println("printOperand");
-            System.out.println(de + "; ");
-        }
-    }
-
-    //test
-    private void printOperator() {
-        BinaryOperator operator;
-        while (!operatorStack.isEmpty()) {
-            operator = operatorStack.pop();
-            System.out.println("printOperator");
-            System.out.println(operator.getName() + "; ");
-        }
     }
 }
