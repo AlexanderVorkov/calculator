@@ -9,6 +9,7 @@
         <module>Console</module>
         <module>Services</module>
         <module>Model</module>
+        <module>StateMachine</module>
     </modules>
     <name>calculator</name>
     <url>http://maven.apache.org</url>

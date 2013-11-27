@@ -48,6 +48,12 @@ public class GeneralTest {
                 BigDecimal.valueOf(3), calc.evaluate(" 1 + 2"));
     }
 
+    @Test
+    public void whitespaces2() throws BinaryOperatorException, CalculatorException{
+        assertEquals("whitespaces weren't calculated",
+                BigDecimal.valueOf(2), calc.evaluate(" 1 + 2/(1 +1)"));
+    }
+
     //Exceptions tests
 
     @Test(expected = BinaryOperatorException.class)

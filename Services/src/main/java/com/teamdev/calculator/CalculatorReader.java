@@ -1,6 +1,6 @@
 package com.teamdev.calculator;
 
-public class CalculatorReader {
+public class CalculatorReader implements AbstractReader {
     private String expression;
     private int position = 0;
 
